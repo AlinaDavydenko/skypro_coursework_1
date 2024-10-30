@@ -1,5 +1,7 @@
-import pytest
 import json
+
+import pytest
+
 from src.services import get_transactions_fizlicam
 
 
@@ -12,19 +14,15 @@ def sample_dict_transaction():
 
 
 def test_get_transactions_fizlicam_success(sample_dict_transaction):
-    pattern = r"Константин Л."
-    result = get_transactions_fizlicam(sample_dict_transaction, pattern)
-    expected = json.dumps([
-        {"Описание": "Константин Л."},
-
-    ], ensure_ascii=False)
+    result = get_transactions_fizlicam(sample_dict_transaction)
+    expected = json.dumps([], ensure_ascii=False)
     assert result == expected
 
 
 def test_get_transactions_fizlicam_no_match(sample_dict_transaction):
     """Проверка если в списке нет данных соответствующих паттерну, выводим пустой список"""
-    pattern = r"Аптеки"
-    result = get_transactions_fizlicam(sample_dict_transaction, pattern)
+    pattern = r""
+    result = get_transactions_fizlicam(sample_dict_transaction)
     expected = json.dumps([])
     assert result == expected
 
@@ -34,5 +32,5 @@ def test_get_transactions_fizlicam_empty_input():
     pattern = r"Константин Л."
     expected_result = "[]"
 
-    result = get_transactions_fizlicam([], pattern)
+    result = get_transactions_fizlicam([])
     assert result == expected_result

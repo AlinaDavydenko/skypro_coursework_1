@@ -3,23 +3,26 @@ import datetime
 import datetime as dt
 import json
 import logging
-# from pathlib import Path
-import pandas as pd
 import os
+
+import pandas as pd
 import requests
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
+load_dotenv()
 
-logger = logging.getLogger("logs")
+logger = logging.getLogger("utils")
 logger.setLevel(logging.INFO)
-file_handler = logging.FileHandler("..\\logs\\utils.log", encoding="utf-8")
-file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+file_handler = logging.FileHandler("../logs/utils.log", encoding="utf-8")
+file_formatter = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s: %(message)s"
+)
 file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 
 
 def get_data(data: str) -> datetime.datetime:
-    """ Date Conversion Function """
+    """Date Conversion Function"""
     logger.info(f"Received date string: {data}")
     try:
         data_obj = datetime.datetime.strptime(data, "%d.%m.%Y %H:%M:%S")
@@ -31,7 +34,7 @@ def get_data(data: str) -> datetime.datetime:
 
 
 def reader_transaction_excel(file_path) -> pd.DataFrame:
-    """ The function takes a path to a file as input and returns a dataframe """
+    """The function takes a path to a file as input and returns a dataframe"""
     logger.info(f"The function to get transactions from a file was called. {file_path}")
     try:
         df_transactions = pd.read_excel(file_path)
@@ -88,7 +91,7 @@ def get_currency_rates(currencies):
 
 
 def get_stock_price(stocks):
-    """ Function that returns stock prices """
+    """Function that returns stock prices"""
     logger.info("The function returning stock prices was called")
     api_key = os.environ.get("API_KEY")
     stock_price = []
@@ -100,15 +103,22 @@ def get_stock_price(stocks):
 
         else:
             data_ = response.json()
-            stock_price.append({"stock": stock, "price": round(float(data_["Global Quote"]["05. price"]), 2)})
+            stock_price.append(
+                {
+                    "stock": stock,
+                    "price": round(float(data_["Global Quote"]["05. price"]), 2),
+                }
+            )
     logger.info("The function has completed its work.")
     return stock_price
 
 
 def top_transaction(df_transactions):
-    """ Function of displaying top 5 transactions by payment amount """
+    """Function of displaying top 5 transactions by payment amount"""
     logger.info("Getting started with the function top_transaction")
-    top_transaction = df_transactions.sort_values(by="Payment amount", ascending=True).iloc[:5]
+    top_transaction = df_transactions.sort_values(
+        by="Сумма операции", ascending=True
+    ).iloc[:5]
     logger.info("Top 5 transactions by payment amount received")
     result_top_transaction = top_transaction.to_dict(orient="records")
     top_transaction_list = []
@@ -116,13 +126,17 @@ def top_transaction(df_transactions):
         top_transaction_list.append(
             {
                 "date": str(
-                    (datetime.datetime.strptime(transaction["Date of operation"], "%d.%m.%Y %H:%M:%S"))
+                    (
+                        datetime.datetime.strptime(
+                            transaction["Дата операции"], "%d.%m.%Y %H:%M:%S"
+                        )
+                    )
                     .date()
                     .strftime("%d.%m.%Y")
                 ).replace("-", "."),
-                "amount": transaction["Payment amount"],
-                "category": transaction["Category"],
-                "description": transaction["Description"],
+                "amount": transaction["Сумма платежа"],
+                "category": transaction["Категория"],
+                "description": transaction["Описание"],
             }
         )
     logger.info("The list of top 5 transactions has been formed")
@@ -130,13 +144,13 @@ def top_transaction(df_transactions):
 
 
 def get_expenses_cards(df_transactions) -> list[dict]:
-    """ Function that returns expenses for each card """
+    """Function that returns expenses for each card"""
     logger.info("Start of function execution get_expenses_cards")
 
     cards_dict = (
-        df_transactions.loc[df_transactions["Payment amount"] < 0]
-        .groupby(by="Card number")
-        .agg("Payment amount")
+        df_transactions.loc[df_transactions["Сумма операции"] < 0]
+        .groupby(by="Номер карты")
+        .agg("Сумма операции")
         .sum()
         .to_dict()
     )
@@ -145,7 +159,11 @@ def get_expenses_cards(df_transactions) -> list[dict]:
     expenses_cards = []
     for card, expenses in cards_dict.items():
         expenses_cards.append(
-            {"last_digits": card, "total spent": abs(expenses), "cashback": abs(round(expenses / 100, 2))}
+            {
+                "last_digits": card,
+                "total spent": abs(expenses),
+                "cashback": abs(round(expenses / 100, 2)),
+            }
         )
         logger.info(f"Added consumption on the card {card}: {abs(expenses)}")
 
@@ -154,17 +172,20 @@ def get_expenses_cards(df_transactions) -> list[dict]:
 
 
 def transaction_currency(df_transactions: pd.DataFrame, data: str) -> pd.DataFrame:
-    """ function generates expenses in a given interval """
-    logger.info(f"Function called transaction_currency with arguments: df_transactions={df_transactions}, data={data}")
+    """function generates expenses in a given interval"""
+    logger.info(
+        f"Function called transaction_currency with arguments: df_transactions={df_transactions}, data={data}"
+    )
     fin_data = get_data(data)
     logger.debug(f"The final date has been received: {fin_data}")
-    start_data = fin_data.replace(day=1)
-    logger.debug(f"Initial date received: {start_data}")
-    fin_data = fin_data.replace(hour=0, minute=0, second=0, microsecond=0) + dt.timedelta(days=1)
+    start_data = fin_data.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     logger.debug(f"End date updated: {fin_data}")
     transaction_currency = df_transactions.loc[
         (pd.to_datetime(df_transactions["Дата операции"], dayfirst=True) <= fin_data)
-        & (pd.to_datetime(df_transactions["Дата операции"], dayfirst=True) >= start_data)
+        & (
+            pd.to_datetime(df_transactions["Дата операции"], dayfirst=True)
+            >= start_data
+        )
     ]
     logger.info(f"Get DataFrame transaction_currency: {transaction_currency}")
 
@@ -172,7 +193,7 @@ def transaction_currency(df_transactions: pd.DataFrame, data: str) -> pd.DataFra
 
 
 def get_greeting():
-    """ Function - greeting """
+    """Function - greeting"""
     hour = dt.datetime.now().hour
     if 4 <= hour < 12:
         return "Good morning"

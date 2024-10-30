@@ -1,4 +1,5 @@
 from pathlib import Path
 
-
-file_path = str(Path(__file__).resolve().parent.parent) + "\\data\\operations.xlsx"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+file_path = ROOT_DIR.joinpath("data", "operations.xlsx")
+settings_path = ROOT_DIR.joinpath("user_settings.json")
